@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% block content %}
+<p>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+        <span><i class="fas fa-plus"></i></span>
+        Add New Employee
+
+    </button>
+</p>
+<table class="table table-striped" id="employee-table">
+    <thead>
+        <tr>
+            <th>Employee Name</th>
+            <th>Roll Number</th>
+            <th>Class</th>
+
+        </tr>
+    </thead>
+
+    <tbody>
+        {% if employee %}
+        {% for value in employee %}
+        <tr id="employee-{{value.id}}">
+            <td class="empName emp-data" name="name">{{value.name}}</td>
+            <td class="empRoll_no emp-data" name="roll_no">{{value.roll_no}}</td>
+            <td class="empClass_name emp-data" name="class_name">{{value.class_name}}</td>
+            <td><button type="button" class="btn btn-warning" data-toggle="modal" data-target="#updateModal" onClick="editEmployee('{{value.id}}')">
+                <span><i class="fas fa-edit"></i></span>
+                Update
+
+            </button></td>
+            <td><button type="button" class="btn btn-danger" onClick="deleteEmployee('{{value.id}}')">
+                <span><i class="fas fa-trash"></i></span>
+                Delete
+
+            </button></td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr id="empty_row">
+            <td colspan ="7" class="text-center bg-warning">No Data</td>
+        </tr>
+
+        {% endif %}
+    </tbody>
+</table>
+
+
+{% include '_main_form_modal.html' %}
+
+
+
+{% endblock %}
+
+{% block javascript %}
+    <script>
+        //ajax create user
+        $("form#addUser").submit(function(){
+            var nameInput = $('input[name="name"]').val().trim();
+            var rollInput = $('input[name="roll_no"]').val().trim();
+            var classInput = $('input[name="class_name"]').val().trim();
+
+            if(nameInput && rollInput && classInput){
+                $.ajax({
+                    url: '{% url "create" %}',
+                    data: {
+                        'name': nameInput,
+                        'roll_no': rollInput,
+                        'class_name': classInput,
+                    },
+                    dataType: 'json',
+                    success: function(data){
+                        if(data.user){
+                            $('#empty_row').hide();
+                            appendToUsrTable(data.user);
+                        }
+                    }
+                });
+            }
+            else{
+                alert("Please fill out the form correctly");
+            }
+
+            $('form#addUser').trigger("reset");
+            $('#exampleModal').modal('hide');
+            return false;
+        });
+
+        function appendToUsrTable(user){
+            $("#employee-table > tbody:last-child").append(`
+            <tr id="employee-${user.id}">
+                <td class="empName emp-data" name="name">${user.name}</td>
+                <td class="empRoll_no emp-data" name="roll_no">${user.roll_no}</td>
+                <td class="empClass_name emp-data" name="class_name">${user.class_name}</td>
+                <td><button type="button" class="btn btn-warning" data-toggle="modal" data-target="#updateModal" onClick="editEmployee('${user.id}')">
+                    <span><i class="fas fa-edit"></i></span>
+                    Update
+
+                </button></td>
+                <td><button type="button" class="btn btn-danger" onClick="deleteEmployee('${user.id}')">
+                    <span><i class="fas fa-trash"></i></span>
+                    Delete
+
+                </button></td>
+            </tr>
+            `);
+        }
+
+        function deleteEmployee(id){
+            var action = confirm("Are You sure you want to delete this employee?")
+            if(action != false){
+                $.ajax({
+                    url: '{% url "delete" %}',
+                    data: {
+                        'id': id
+                    },
+                    dataType: 'json',
+                    success: function(data){
+                        if(data.deleted){
+                            $('#employee-table #employee-' + id).remove();
+                            if(data.empty){
+                                $("#empty_row").show();
+                            }else{
+                                $('#empty_row').hide();
+                            }
+
+                        }
+
+                    }
+                });
+            }
+        }
+
+        // update ajax call updateUser
+        
+        $("form#updateUser").submit(function(){
+
+            var idinput = $('input[name="id"]').val().trim();
+            var nameinput = $('input[name="Uname"]').val().trim();
+            var rollinput = $('input[name="Uroll_no"]').val().trim();
+            var classinput = $('input[name="Uclass_name"]').val().trim();
+
+            console.log(nameinput);
+
+            if(nameinput && rollinput && classinput){
+                $.ajax({
+                    url:'{% url "update" %}',
+                    data:{
+                        'id':idinput,
+                        'name':nameinput,
+                        'roll_no':rollinput,
+                        'class_name':classinput,
+                    },
+                    dataType:"json",
+                    success: function(data){
+                        if(data.user){
+                            updateEmployee(data.user);
+                        }
+
+                    }
+                });
+            }
+            else{
+                console.log(data);
+            }
+            $("form#updateUser").trigger("reset");
+            $("#updateModal").modal('hide');
+            return false;
+        });
+        function editEmployee(id){
+            if(id){
+                tr_id = '#employee-'+ id;
+                name = $(tr_id).find(".empName").text();
+                roll_no = $(tr_id).find(".empRoll_no").text();
+                class_name = $(tr_id).find(".empClass_name").text();
+                console.log(name+class_name);
+                $('#form-id').val(id);
+                $('#form-name').val(name);
+                $('#form-roll').val(roll_no);
+                $('#form-class').val(class_name);
+            }
+        }
+        
+        function updateEmployee(user){
+            $('#employee-table #employee-' + user.id).children(".emp-data").each(function(){
+                var attr = $(this).attr("name");
+                if(attr == "name"){
+                    $(this).text(user.name);
+                }
+                else if(attr == "roll_no"){
+                    $(this).text(user.roll_no);
+                }
+                else{
+                    $(this).text(user.class_name);
+                }
+            });
+        }
+    </script>
+{% endblock %}
